@@ -1,0 +1,38 @@
+     1|[project]
+     2|name = "geography-kg-qa"
+     3|version = "0.1.0"
+     4|description = "地理旅游知识图谱问答系统"
+     5|requires-python = ">=3.11"
+     6|dependencies = [
+     7|    "fastapi>=0.115",
+     8|    "uvicorn[standard]>=0.34",
+     9|    "gunicorn>=23.0",
+    10|    "pydantic-settings>=2.7",
+    11|    "neo4j>=5.27",
+    12|    "langchain>=0.3",
+    13|    "langchain-openai>=0.3",
+    14|    "httpx>=0.28",
+    15|    "sse-starlette>=2.2",
+    16|    "python-dotenv>=1.1",
+    17|    "sqlalchemy>=2.0",
+    18|    "pymysql>=1.1",
+    19|    "pyjwt>=2.10",
+    20|    "bcrypt>=4.2",
+    21|    "pymilvus>=2.4",
+    22|    "bm25s>=0.2",
+    23|    "rank_bm25>=0.2.2",
+    24|    "jieba>=0.42",
+    25|]
+    26|
+    27|[project.optional-dependencies]
+    28|dev = [
+    29|    "pytest>=8.3",
+    30|    "pytest-asyncio>=0.25",
+    31|    "pytest-cov>=6.0",
+    32|    "httpx",
+    33|]
+    34|
+    35|[tool.pytest.ini_options]
+    36|asyncio_mode = "auto"
+    37|testpaths = ["backend/tests"]
+    38|
