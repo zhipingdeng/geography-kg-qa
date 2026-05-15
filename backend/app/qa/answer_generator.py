@@ -66,7 +66,7 @@ class AnswerGenerator:
             msg = response.json()["choices"][0]["message"]
             content = (msg.get("content") or "").strip()
             if not content:
-                reasoning = (msg.get("reasoning") or "").strip()
+                reasoning = (msg.get("reasoning_content") or msg.get("reasoning") or "").strip()
                 if reasoning:
                     paragraphs = [p.strip() for p in reasoning.split("\n") if p.strip()]
                     content = "\n".join(paragraphs[-3:])
@@ -104,7 +104,7 @@ class AnswerGenerator:
             # Prefer content; fall back to reasoning (thinking models)
             content = (msg.get("content") or "").strip()
             if not content:
-                reasoning = (msg.get("reasoning") or "").strip()
+                reasoning = (msg.get("reasoning_content") or msg.get("reasoning") or "").strip()
                 if reasoning:
                     # Extract the last paragraph as the actual answer
                     # (thinking models put reasoning first, answer last)

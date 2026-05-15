@@ -36,7 +36,7 @@ class QueryRewriter:
                 resp.raise_for_status()
                 data = resp.json()
                 msg = data["choices"][0]["message"]
-                text = (msg.get("content") or msg.get("reasoning") or "").strip()
+                text = (msg.get("content") or msg.get("reasoning_content") or msg.get("reasoning") or "").strip()
                 # Remove thinking tags if present
                 if "<think>" in text:
                     import re

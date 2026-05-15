@@ -1,152 +1,151 @@
-     1|services:
-     2|  neo4j:
-     3|    image: neo4j:5-community
-     4|    container_name: neo4j-geography-kg-qa
-     5|    ports:
-     6|      - "7688:7687"
-     7|      - "7475:7474"
-     8|    environment:
-     9|      NEO4J_AUTH: neo4j/kgqa123
-    10|      NEO4J_dbms_security_auth__minimum__password__length: 6
-    11|      NEO4J_PLUGINS: '[]'
-    12|    volumes:
-    13|      - neo4j_data:/data
-    14|      - neo4j_logs:/logs
-    15|    healthcheck:
-    16|      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
-    17|      interval: 10s
-    18|      timeout: 5s
-    19|      retries: 5
-    20|
-    21|  mysql:
-    22|    image: mysql:8.0
-    23|    container_name: mysql-geography-kg-qa
-    24|    ports:
-    25|      - "3308:3306"
-    26|    environment:
-    27|      MYSQL_ROOT_PASSWORD: root123
-    28|      MYSQL_DATABASE: geography_kg_qa
-    29|      MYSQL_USER: kgqa
-    30|      MYSQL_PASSWORD: kgqa123
-    31|    volumes:
-    32|      - mysql_data:/var/lib/mysql
-    33|    user: root
-    34|    healthcheck:
-    35|      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-    36|      interval: 10s
-    37|      timeout: 5s
-    38|      retries: 5
-    39|
-    40|  etcd:
-    41|    image: quay.io/coreos/etcd:v3.5.5
-    42|    container_name: etcd-geography-kg-qa
-    43|    environment:
-    44|      ETCD_AUTO_COMPACTION_MODE: revision
-    45|      ETCD_QUOTA_BACKEND_BYTES: 4294967296
-    46|      ETCD_SNAPSHOT_COUNT: 50000
-    47|    volumes:
-    48|      - etcd_data:/etcd
-    49|    command: etcd --advertise-client-urls=http://127.0.0.1:2379 --listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
-    50|    healthcheck:
-    51|      test: ["CMD", "etcdctl", "endpoint", "health"]
-    52|      interval: 30s
-    53|      timeout: 20s
-    54|      retries: 3
-    55|
-    56|  minio:
-    57|    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
-    58|    container_name: minio-geography-kg-qa
-    59|    environment:
-    60|      MINIO_ACCESS_KEY: minioadmin
-    61|      MINIO_SECRET_KEY: minioadmin
-    62|    volumes:
-    63|      - minio_data:/minio_data
-    64|    command: minio server /minio_data --console-address ':9001'
-    65|    healthcheck:
-    66|      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-    67|      interval: 30s
-    68|      timeout: 20s
-    69|      retries: 3
-    70|
-    71|  milvus-standalone:
-    72|    image: milvusdb/milvus:v2.4.1
-    73|    container_name: milvus-geography-kg-qa
-    74|    command: ["milvus", "run", "standalone"]
-    75|    environment:
-    76|      ETCD_ENDPOINTS: etcd:2379
-    77|      MINIO_ADDRESS: minio:9000
-    78|    volumes:
-    79|      - milvus_data:/var/lib/milvus
-    80|    healthcheck:
-    81|      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
-    82|      interval: 30s
-    83|      start_period: 90s
-    84|      timeout: 20s
-    85|      retries: 3
-    86|    ports:
-    87|      - "19531:19530"
-    88|      - "9092:9091"
-    89|    depends_on:
-    90|      etcd:
-    91|        condition: service_started
-    92|      minio:
-    93|        condition: service_started
-    94|
-    95|  backend:
-    96|    build:
-    97|      context: ./backend
-    98|      dockerfile: Dockerfile
-    99|    container_name: backend-geography-kg-qa
-   100|    ports:
-   101|      - "8001:8000"
-   102|    environment:
-   103|      NEO4J_URI: bolt://neo4j:7687
-   104|      NEO4J_USER: neo4j
-   105|      NEO4J_PASSWORD: kgqa123
-   106|      MYSQL_HOST: mysql
-   107|      MYSQL_PORT: 3306
-   108|      MYSQL_USER: kgqa
-   109|      MYSQL_PASSWORD: kgqa123
-   110|      MYSQL_DATABASE: geography_kg_qa
-   111|      MILVUS_HOST: milvus-standalone
-   112|      MILVUS_PORT: 19530
-   113|      MILVUS_COLLECTION: kgqa_documents
-   114|      EMBEDDING_MODEL: bge-m3
-   115|      EMBEDDING_BASE_URL: http://host.docker.internal:11434
-   116|      LLM_MODEL_NAME: qwen3.5-plus
-   117|      LLM_BASE_URL: https://dashscope.aliyuncs.com/compatible-mode/v1
-   118|      LLM_API_KEY: ${LLM_API_KEY:-sk-3f1bef4e439649c6a72a5a59ea4b65af}
-   119|      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-history-kgqa-secret-key-2026}
-   120|    depends_on:
-   121|      neo4j:
-   122|        condition: service_healthy
-   123|      mysql:
-   124|        condition: service_healthy
-   125|      milvus-standalone:
-   126|        condition: service_healthy
-   127|    healthcheck:
-   128|      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
-   129|      interval: 15s
-   130|      timeout: 5s
-   131|      retries: 5
-   132|      start_period: 30s
-   133|
-   134|  frontend:
-   135|    build:
-   136|      context: ./frontend
-   137|      dockerfile: Dockerfile
-   138|    container_name: frontend-geography-kg-qa
-   139|    ports:
-   140|      - "81:80"
-   141|    depends_on:
-   142|      backend:
-   143|        condition: service_healthy
-   144|
-   145|volumes:
-   146|  neo4j_data:
-   147|  neo4j_logs:
-   148|  mysql_data:
-   149|  etcd_data:
-   150|  minio_data:
-   151|  milvus_data:
-   152|
+services:
+  neo4j:
+    image: neo4j:5-community
+    container_name: neo4j-geography-kg-qa
+    ports:
+      - "7688:7687"
+      - "7475:7474"
+    environment:
+      NEO4J_AUTH: neo4j/kgqa123456
+      NEO4J_dbms_security_auth__minimum__password__length: 6
+      NEO4J_PLUGINS: '[]'
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-geography-kg-qa
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: kgqa123456
+      MYSQL_DATABASE: geography_kg_qa
+      MYSQL_USER: kgqa
+      MYSQL_PASSWORD: kgqa123456
+    volumes:
+      - mysql_data:/var/lib/mysql
+    user: root
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.5
+    container_name: etcd-geography-kg-qa
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_QUOTA_BACKEND_BYTES: 4294967296
+      ETCD_SNAPSHOT_COUNT: 50000
+    volumes:
+      - etcd_data:/etcd
+    command: etcd --advertise-client-urls=http://127.0.0.1:2379 --listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  minio:
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    container_name: minio-geography-kg-qa
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    volumes:
+      - minio_data:/minio_data
+    command: minio server /minio_data --console-address ':9001'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  milvus-standalone:
+    image: milvusdb/milvus:v2.4.1
+    container_name: milvus-geography-kg-qa
+    command: ["milvus", "run", "standalone"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+    volumes:
+      - milvus_data:/var/lib/milvus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 30s
+      start_period: 90s
+      timeout: 20s
+      retries: 3
+    ports:
+      - "19531:19530"
+      - "9092:9091"
+    depends_on:
+      etcd:
+        condition: service_started
+      minio:
+        condition: service_started
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend-geography-kg-qa
+    ports:
+      - "8003:8000"
+    environment:
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: kgqa123456
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: kgqa
+      MYSQL_PASSWORD: kgqa123456
+      MYSQL_DATABASE: geography_kg_qa
+      MILVUS_HOST: milvus-standalone
+      MILVUS_PORT: 19530
+      MILVUS_COLLECTION: kgqa_documents
+      EMBEDDING_MODEL: bge-m3
+      EMBEDDING_BASE_URL: http://host.docker.internal:11434
+      LLM_MODEL_NAME: mimo-v2.5-pro
+      LLM_BASE_URL: https://token-plan-cn.xiaomimimo.com/v1
+      LLM_API_KEY: tp-cf1a50lgswg37l7viefuyk79hcda8r74ix0qgwnctbnhk3bn
+      JWT_SECRET_KEY: geography-kg-qa-jwt-secret-2026
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      milvus-standalone:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend-geography-kg-qa
+    ports:
+      - "83:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  mysql_data:
+  etcd_data:
+  minio_data:
+  milvus_data:

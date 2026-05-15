@@ -18,7 +18,7 @@ OWNTHINK_PATH = "/mnt/e/hermes_code_workspace/dataset/通用百科数据集/OwnT
 
 async def main():
     parser_args = argparse.ArgumentParser(description="Import OwnThink KG into Neo4j")
-    parser_args.add_argument("--tags", type=str, default="历史,历史事件,历史人物",
+    parser_args.add_argument("--tags", type=str, default="地理,旅游,景点,山脉,河流,湖泊,国家,城市",
                              help="Comma-separated tags to filter (default: '历史,历史事件,历史人物')")
     parser_args.add_argument("--limit", type=int, default=100000,
                              help="Max triples to import")

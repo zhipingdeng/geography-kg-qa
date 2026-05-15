@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     mysql_port: int = 3308
     mysql_user: str = "kgqa"
     mysql_password: str = "kgqa123"
-    mysql_database: str = "history_kg_qa"
+    mysql_database: str = "geography_kg_qa"
 
     # Embedding
     embedding_model: str = "bge-m3"
@@ -45,3 +45,6 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+settings = get_settings()

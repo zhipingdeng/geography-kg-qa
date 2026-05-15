@@ -27,7 +27,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to, _from, next) => {
-  document.title = `${to.meta.title || '历史知识问答'} - KG-QA`
+  document.title = `${to.meta.title || '地理知识问答'} - KG-QA`
   const token = localStorage.getItem('token')
   if (to.meta.guest && token) {
     next('/')
