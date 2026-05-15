@@ -35,7 +35,7 @@ async def import_project(name: str, uri: str, tags: list[str], limit: int = 1000
     print(f"Tags: {tags}")
     print(f"{'='*60}")
 
-    client = Neo4jClient(uri, "neo4j", "kgqa123456")
+    client = Neo4jClient(uri, "neo4j", os.getenv("NEO4J_PASSWORD", ""))
     await client.connect()
 
     parser = OwnThinkParser()
