@@ -36,3 +36,8 @@
     36|asyncio_mode = "auto"
     37|testpaths = ["backend/tests"]
     38|
+[project.optional-dependencies]
+eval = [
+    "ragas>=0.2",
+    "datasets>=3.0",
+]
